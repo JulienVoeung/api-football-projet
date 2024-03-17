@@ -1,0 +1,12 @@
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres://admin:adminadmin@postgres:5432/football
+    database: football
+    user: admin
+    password: adminadmin
+    sslmode: disable
+    editable: true

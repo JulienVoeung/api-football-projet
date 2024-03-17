@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  scraper:
+    build:
+      context: batch-python
+      dockerfile: Dockerfile
+    container_name: scraper
+    environment:
+      - API_HOST=api-football-v1.p.rapidapi.com
+      - API_KEY=67b5aa9080msha45fbcb428a243dp1caba5jsn4e7be42b1086
+    depends_on:
+      - minio
+  batch-spark:
+    build:
+      context: spark-analysis
+      dockerfile: Dockerfile
+    container_name: spark-analysis
+    depends_on:
+      - minio
+      - postgres
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      MINIO_ACCESS_KEY: votre-access-key
+      MINIO_SECRET_KEY: votre-secret-key
+    command: server /data
+    ports:
+      - "9000:9000"
+    volumes:
+      - minio-data:/data
+  postgres:
+    image: postgres:15.0-alpine
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminadmin
+      - POSTGRES_DB=football
+    command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres-data:/var/lib/postgres/data_temp
+      - ./infrastructure:/docker-entrypoint-initdb.d 
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_DISABLE_INITIAL_SETUP: "true"
+    command: grafana-cli admin reset-admin-password adminadmin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infrastructure/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+    depends_on:
+      - postgres
+volumes:
+  minio-data:
+  grafana-data:
+  postgres-data:
+
